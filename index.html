@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>お買い物リスト</title>
 
   <!-- PWA設定 -->
@@ -15,13 +15,14 @@
   <meta name="apple-mobile-web-app-title" content="買い物リスト">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
       background: #f2f2f7;
       min-height: 100vh;
-      padding-bottom: 80px;
+      padding-bottom: 90px;
+      touch-action: manipulation;
     }
 
     /* ヘッダー */
@@ -32,6 +33,7 @@
       position: sticky;
       top: 0;
       z-index: 10;
+      padding-top: calc(20px + env(safe-area-inset-top));
     }
 
     .header h1 {
@@ -42,22 +44,22 @@
 
     /* 進捗バー */
     .progress-text {
-      font-size: 13px;
+      font-size: 14px;
       color: #888;
       margin-bottom: 6px;
     }
 
     .progress-bar-bg {
-      height: 4px;
+      height: 5px;
       background: #e0e0e0;
-      border-radius: 4px;
+      border-radius: 5px;
       overflow: hidden;
     }
 
     .progress-bar-fill {
       height: 100%;
       background: #4CAF50;
-      border-radius: 4px;
+      border-radius: 5px;
       transition: width 0.3s;
     }
 
@@ -76,9 +78,11 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 13px 16px;
+      padding: 14px 16px;
+      min-height: 48px;
       cursor: pointer;
       user-select: none;
+      -webkit-user-select: none;
       border-bottom: 1px solid #f2f2f2;
     }
 
@@ -90,13 +94,13 @@
 
     .cat-name {
       flex: 1;
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 600;
       color: #222;
     }
 
     .cat-count {
-      font-size: 13px;
+      font-size: 14px;
       color: #999;
     }
 
@@ -104,6 +108,7 @@
       font-size: 12px;
       color: #bbb;
       transition: transform 0.2s;
+      padding: 6px;
     }
 
     .category-card.collapsed .cat-chevron {
@@ -113,22 +118,23 @@
     .category-body { display: block; }
     .category-card.collapsed .category-body { display: none; }
 
-    /* アイテム行 */
+    /* アイテム行（タップ領域48px以上） */
     .item-row {
       display: flex;
       align-items: center;
       gap: 12px;
       padding: 12px 16px;
+      min-height: 52px;
       border-bottom: 1px solid #f5f5f5;
       transition: background 0.1s;
     }
 
     .item-row:last-of-type { border-bottom: none; }
 
-    /* チェックボックス（丸） */
+    /* チェックボックス（丸・タップしやすく） */
     .check-circle {
-      width: 24px;
-      height: 24px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       border: 2px solid #ccc;
       display: flex;
@@ -140,6 +146,17 @@
       background: white;
     }
 
+    /* 見た目より広いタップ領域を確保 */
+    .check-tap {
+      padding: 10px;
+      margin: -10px;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     .check-circle.checked {
       background: #4CAF50;
       border-color: #4CAF50;
@@ -148,14 +165,15 @@
     .check-circle.checked::after {
       content: '✓';
       color: white;
-      font-size: 13px;
+      font-size: 15px;
       font-weight: bold;
     }
 
     .item-name {
       flex: 1;
-      font-size: 15px;
+      font-size: 16px;
       color: #222;
+      cursor: pointer;
     }
 
     .item-row.done .item-name {
@@ -168,50 +186,96 @@
       border: none;
       cursor: pointer;
       color: #ffb3b3;
-      font-size: 16px;
-      padding: 4px;
+      font-size: 17px;
+      padding: 12px;
+      margin: -8px;
       border-radius: 6px;
       flex-shrink: 0;
       transition: color 0.15s;
     }
 
-    .delete-btn:hover { color: #e53935; }
+    .delete-btn:active { color: #e53935; }
 
     /* カテゴリー内の追加欄 */
     .add-row {
       display: flex;
       gap: 8px;
-      padding: 10px 16px 12px;
+      padding: 10px 16px 14px;
       border-top: 1px solid #f0f0f0;
     }
 
+    /* フォントは16px（iPhoneで入力時に画面が勝手にズームしないため） */
     .add-row input {
       flex: 1;
+      min-width: 0;
       border: 1.5px solid #e0e0e0;
-      border-radius: 8px;
-      padding: 8px 12px;
-      font-size: 14px;
+      border-radius: 10px;
+      padding: 11px 12px;
+      font-size: 16px;
       outline: none;
       background: #fafafa;
       color: #333;
     }
 
     .add-row input:focus { border-color: #4CAF50; background: white; }
-
     .add-row input::placeholder { color: #bbb; }
 
     .add-row-btn {
-      padding: 8px 14px;
+      padding: 11px 16px;
+      min-height: 44px;
       background: #1976d2;
       color: white;
       border: none;
-      border-radius: 8px;
-      font-size: 13px;
+      border-radius: 10px;
+      font-size: 15px;
       cursor: pointer;
       white-space: nowrap;
     }
 
-    .add-row-btn:hover { background: #1565c0; }
+    .add-row-btn:active { background: #1565c0; }
+
+    /* 新しいカテゴリ追加カード */
+    .add-category-card {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+      overflow: hidden;
+    }
+
+    .add-category-toggle {
+      width: 100%;
+      padding: 14px 16px;
+      min-height: 52px;
+      background: none;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      color: #1976d2;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .add-category-form {
+      display: none;
+      gap: 8px;
+      padding: 4px 16px 14px;
+    }
+
+    .add-category-card.open .add-category-form { display: flex; }
+
+    .add-category-form input {
+      flex: 1;
+      min-width: 0;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 11px 12px;
+      font-size: 16px;
+      outline: none;
+      background: #fafafa;
+      color: #333;
+    }
+
+    .add-category-form input:focus { border-color: #4CAF50; background: white; }
 
     /* 下部固定バー */
     .bottom-bar {
@@ -221,24 +285,25 @@
       right: 0;
       background: white;
       border-top: 1px solid #e0e0e0;
-      padding: 12px 16px;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
       display: flex;
       gap: 10px;
     }
 
     .btn-reset {
       flex: 1;
-      padding: 12px;
+      padding: 14px;
+      min-height: 48px;
       background: #e53935;
       color: white;
       border: none;
-      border-radius: 10px;
-      font-size: 14px;
+      border-radius: 12px;
+      font-size: 15px;
       font-weight: 600;
       cursor: pointer;
     }
 
-    .btn-reset:hover { background: #c62828; }
+    .btn-reset:active { background: #c62828; }
   </style>
 </head>
 <body>
@@ -258,67 +323,113 @@
 </div>
 
 <script>
-  const CATEGORIES = [
-    { id: 'vegefruit', icon: '🥦', name: '野菜・果物',
-      defaults: ['キャベツ','たまねぎ','にんじん','じゃがいも','ほうれん草','きゅうり','トマト','レタス','ブロッコリー','もやし','大根','なす','ピーマン','バナナ','りんご','みかん'] },
-    { id: 'meat', icon: '🥩', name: '肉・魚・卵',
-      defaults: ['鶏もも肉','鶏むね肉','豚こま切れ','豚バラ','牛こま切れ','ひき肉','鮭','アジ','サバ缶','ツナ缶','卵','豆腐'] },
-    { id: 'dairy', icon: '🥛', name: '乳製品',
-      defaults: ['牛乳','豆乳','ヨーグルト','チーズ','バター','生クリーム'] },
-    { id: 'bread', icon: '🍞', name: '主食・麺',
-      defaults: ['食パン','米','うどん','パスタ','そば','ラーメン','春雨','小麦粉'] },
-    { id: 'seasoning', icon: '🧂', name: '調味料',
-      defaults: ['醤油','塩','砂糖','みりん','料理酒','酢','味噌','マヨネーズ','ケチャップ','ごま油','オリーブオイル','だしの素'] },
-    { id: 'drink', icon: '🧃', name: '飲み物',
-      defaults: ['お茶','麦茶','コーヒー','ジュース','水','ビール','炭酸水'] },
-    { id: 'snack', icon: '🍫', name: 'お菓子',
-      defaults: ['チョコレート','ポテトチップス','クッキー','アイス','グミ','せんべい'] },
-    { id: 'daily', icon: '🧴', name: '日用品',
-      defaults: ['シャンプー','コンディショナー','ボディソープ','ティッシュ','トイレットペーパー','洗剤','柔軟剤','スポンジ','歯磨き粉','ラップ','ポリ袋'] },
+  // ===== 初期データ（8カテゴリ） =====
+  const DEFAULT_CATEGORIES = [
+    { id: 'cat_vege', icon: '🥦', name: '野菜',
+      items: ['キャベツ','たまねぎ','にんじん','じゃがいも','ほうれん草','きゅうり','トマト','レタス','ブロッコリー','もやし','大根','なす','ピーマン','バナナ','りんご','みかん'] },
+    { id: 'cat_meat', icon: '🥩', name: '肉',
+      items: ['鶏もも肉','鶏むね肉','豚こま切れ','豚バラ','牛こま切れ','ひき肉','鮭','ツナ缶','卵','豆腐'] },
+    { id: 'cat_dairy', icon: '🥛', name: '乳製品',
+      items: ['牛乳','ヨーグルト','チーズ','バター'] },
+    { id: 'cat_staple', icon: '🍞', name: '主食',
+      items: ['食パン','米','うどん','パスタ','そば','ラーメン'] },
+    { id: 'cat_drink', icon: '🧃', name: '飲み物',
+      items: ['お茶','麦茶','コーヒー','ジュース','水','炭酸水'] },
+    { id: 'cat_snack', icon: '🍫', name: 'お菓子',
+      items: ['チョコレート','ポテトチップス','クッキー','アイス','せんべい'] },
+    { id: 'cat_daily', icon: '🧴', name: '日用品',
+      items: ['シャンプー','ボディソープ','ティッシュ','トイレットペーパー','洗剤','柔軟剤','歯磨き粉','ラップ','ポリ袋'] },
+    { id: 'cat_other', icon: '📦', name: 'その他',
+      items: ['醤油','味噌','砂糖','マヨネーズ','ごま油'] },
   ];
 
-  const KEY = 'shopping-v4';
-  const collapseKey = 'shopping-collapse-v4';
+  const KEY = 'shopping-v5';
+  const OLD_KEY = 'shopping-v4';
+  const collapseKey = 'shopping-collapse-v5';
 
-  function save(data) { localStorage.setItem(KEY, JSON.stringify(data)); }
+  // ===== データの読み書き =====
+  function save(state) { localStorage.setItem(KEY, JSON.stringify(state)); }
+
+  function buildDefault() {
+    return {
+      categories: DEFAULT_CATEGORIES.map(c => ({
+        id: c.id,
+        icon: c.icon,
+        name: c.name,
+        items: c.items.map(text => ({ text, done: false })),
+      })),
+    };
+  }
+
+  // 旧バージョン（v4）のデータがあれば引き継ぐ
+  function migrateFromV4() {
+    const old = localStorage.getItem(OLD_KEY);
+    if (!old) return null;
+    let oldData;
+    try { oldData = JSON.parse(old); } catch (e) { return null; }
+    const idMap = {
+      vegefruit: 'cat_vege', meat: 'cat_meat', dairy: 'cat_dairy',
+      bread: 'cat_staple', drink: 'cat_drink', snack: 'cat_snack',
+      daily: 'cat_daily', seasoning: 'cat_other',
+    };
+    const state = buildDefault();
+    Object.entries(idMap).forEach(([oldId, newId]) => {
+      if (Array.isArray(oldData[oldId])) {
+        const cat = state.categories.find(c => c.id === newId);
+        if (cat) cat.items = oldData[oldId].map(i => ({ text: String(i.text), done: !!i.done }));
+      }
+    });
+    save(state);
+    return state;
+  }
+
   function load() {
     const s = localStorage.getItem(KEY);
-    if (s) return JSON.parse(s);
-    return buildDefault();
-  }
-  function buildDefault() {
-    const d = {};
-    CATEGORIES.forEach(c => {
-      d[c.id] = c.defaults.map(text => ({ text, done: false }));
-    });
-    return d;
+    if (s) {
+      try {
+        const state = JSON.parse(s);
+        if (state && Array.isArray(state.categories)) return state;
+      } catch (e) { /* 壊れていたら作り直す */ }
+    }
+    const migrated = migrateFromV4();
+    if (migrated) return migrated;
+    const state = buildDefault();
+    save(state);
+    return state;
   }
 
+  // ===== 折りたたみ =====
   function getCollapsed() {
     const s = localStorage.getItem(collapseKey);
-    return s ? JSON.parse(s) : {};
-  }
-  function setCollapsed(collapsed) {
-    localStorage.setItem(collapseKey, JSON.stringify(collapsed));
+    try { return s ? JSON.parse(s) : {}; } catch (e) { return {}; }
   }
   function toggleCollapse(catId) {
     const col = getCollapsed();
     col[catId] = !col[catId];
-    setCollapsed(col);
+    localStorage.setItem(collapseKey, JSON.stringify(col));
     render();
   }
 
+  // ===== アイテム操作 =====
+  function findCat(state, catId) {
+    return state.categories.find(c => c.id === catId);
+  }
+
   function toggleItem(catId, idx) {
-    const data = load();
-    data[catId][idx].done = !data[catId][idx].done;
-    save(data);
+    const state = load();
+    const cat = findCat(state, catId);
+    if (!cat || !cat.items[idx]) return;
+    cat.items[idx].done = !cat.items[idx].done;
+    save(state);
     render();
   }
 
   function deleteItem(catId, idx) {
-    const data = load();
-    data[catId].splice(idx, 1);
-    save(data);
+    const state = load();
+    const cat = findCat(state, catId);
+    if (!cat) return;
+    cat.items.splice(idx, 1);
+    save(state);
     render();
   }
 
@@ -326,75 +437,111 @@
     const input = document.getElementById('input-' + catId);
     const text = input.value.trim();
     if (!text) return;
-    const data = load();
-    data[catId].push({ text, done: false });
-    save(data);
+    const state = load();
+    const cat = findCat(state, catId);
+    if (!cat) return;
+    cat.items.push({ text, done: false });
+    save(state);
     render();
-    // フォーカス維持
     setTimeout(() => {
       const el = document.getElementById('input-' + catId);
       if (el) el.focus();
     }, 50);
   }
 
+  // ===== カテゴリ追加 =====
+  function toggleAddCategory() {
+    document.getElementById('addCategoryCard').classList.toggle('open');
+    const input = document.getElementById('newCategoryName');
+    if (document.getElementById('addCategoryCard').classList.contains('open')) {
+      setTimeout(() => input.focus(), 50);
+    }
+  }
+
+  function addCategory() {
+    const input = document.getElementById('newCategoryName');
+    const name = input.value.trim();
+    if (!name) return;
+    const state = load();
+    state.categories.push({
+      id: 'cat_' + Date.now(),
+      icon: '🏷️',
+      name: name,
+      items: [],
+    });
+    save(state);
+    input.value = '';
+    render();
+  }
+
   function resetList() {
     if (!confirm('すべてのチェックをリセットしますか？')) return;
-    const data = load();
-    CATEGORIES.forEach(c => {
-      if (data[c.id]) data[c.id].forEach(i => i.done = false);
-    });
-    save(data);
+    const state = load();
+    state.categories.forEach(c => c.items.forEach(i => i.done = false));
+    save(state);
     render();
   }
 
   function escapeHtml(t) {
-    return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
 
+  // ===== 描画 =====
   function render() {
-    const data = load();
+    const state = load();
     const collapsed = getCollapsed();
     const content = document.getElementById('content');
 
     let totalDone = 0, totalAll = 0;
 
-    content.innerHTML = CATEGORIES.map(c => {
-      const items = data[c.id] || [];
-      const done = items.filter(i => i.done).length;
-      const total = items.length;
+    const cardsHtml = state.categories.map(c => {
+      const done = c.items.filter(i => i.done).length;
+      const total = c.items.length;
       totalDone += done;
       totalAll += total;
 
       const isCollapsed = collapsed[c.id];
 
-      const itemsHtml = items.map((item, idx) => `
+      const itemsHtml = c.items.map((item, idx) => `
         <div class="item-row ${item.done ? 'done' : ''}">
-          <div class="check-circle ${item.done ? 'checked' : ''}"
-            onclick="toggleItem('${c.id}', ${idx})"></div>
-          <span class="item-name">${escapeHtml(item.text)}</span>
-          <button class="delete-btn" onclick="deleteItem('${c.id}', ${idx})">🗑</button>
+          <div class="check-tap" onclick="toggleItem('${c.id}', ${idx})">
+            <div class="check-circle ${item.done ? 'checked' : ''}"></div>
+          </div>
+          <span class="item-name" onclick="toggleItem('${c.id}', ${idx})">${escapeHtml(item.text)}</span>
+          <button class="delete-btn" onclick="deleteItem('${c.id}', ${idx})" aria-label="削除">🗑</button>
         </div>
       `).join('');
 
       return `
         <div class="category-card ${isCollapsed ? 'collapsed' : ''}">
           <div class="category-header" onclick="toggleCollapse('${c.id}')">
-            <span class="cat-icon">${c.icon}</span>
-            <span class="cat-name">${c.name}</span>
+            <span class="cat-icon">${escapeHtml(c.icon)}</span>
+            <span class="cat-name">${escapeHtml(c.name)}</span>
             <span class="cat-count">${done}/${total}</span>
             <span class="cat-chevron">▼</span>
           </div>
           <div class="category-body">
             ${itemsHtml}
             <div class="add-row">
-              <input id="input-${c.id}" type="text" placeholder="アイテムを追加..."
-                onkeydown="if(event.key==='Enter') addItem('${c.id}')">
+              <input id="input-${c.id}" type="text" placeholder="アイテムを追加..." enterkeyhint="done"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();addItem('${c.id}')}">
               <button class="add-row-btn" onclick="addItem('${c.id}')">追加</button>
             </div>
           </div>
         </div>
       `;
     }).join('');
+
+    content.innerHTML = cardsHtml + `
+      <div class="add-category-card" id="addCategoryCard">
+        <button class="add-category-toggle" onclick="toggleAddCategory()">＋ カテゴリを追加</button>
+        <div class="add-category-form">
+          <input id="newCategoryName" type="text" placeholder="カテゴリ名（例: ペット用品）" enterkeyhint="done"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();addCategory()}">
+          <button class="add-row-btn" onclick="addCategory()">追加</button>
+        </div>
+      </div>
+    `;
 
     // 進捗更新
     document.getElementById('progressText').textContent = `${totalDone} / ${totalAll} 完了`;
